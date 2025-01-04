@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RBAC x SMT</title>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.21.0/vis.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-bold text-gray-900 mb-8">Tenant Management System</h1>
+        
+        <div class="grid grid-cols-1 gap-6">
+            <!-- Data Display Section -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Current Data</h2>
+                <div id="currentData" class="text-sm"></div>
+            </div>
+
+            <!-- Input Forms Section -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Left Column -->
+                <div class="space-y-6">
+                    <!-- Tenants Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Tenants</h2>
+                        <div class="space-y-4">
+                            <div class="flex gap-2">
+                                <input type="text" id="tenantName" placeholder="Tenant name" 
+                                       class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                <button onclick="addTenant()" 
+                                        class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Add</button>
+                            </div>
+                            
+                            <div class="space-y-2">
+                                <h3 class="text-sm font-medium text-gray-700">Add Tenant Relationship</h3>
+                                <div class="flex gap-2">
+                                    <select id="parentTenant" class="flex-1 rounded-md border-gray-300 shadow-sm"></select>
+                                    <select id="childTenant" class="flex-1 rounded-md border-gray-300 shadow-sm"></select>
+                                    <button onclick="addTenantRelationship()" 
+                                            class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">Link</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="mynetwork" class="mt-4 border border-gray-200 rounded-lg h-48"></div>
+                    </div>
+
+                    <!-- SMT Query Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">SMT-LIB2 Query</h2>
+                        <textarea id="smtQuery" rows="4" 
+                                  class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"></textarea>
+                        <button onclick="checkFormula()" 
+                                class="mt-2 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 w-full">Check Formula</button>
+                        <pre id="smtResult" class="mt-4 bg-gray-50 p-4 rounded-md text-sm overflow-x-auto"></pre>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div class="space-y-6">
+                    <!-- Resources Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Resources</h2>
+                        <div class="space-y-4">
+                            <input type="text" id="resourceName" placeholder="Resource name" 
+                                   class="w-full rounded-md border-gray-300 shadow-sm">
+                            <select id="resourceTenant" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <div class="space-y-2">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="sharedDown" class="rounded text-indigo-600">
+                                    <span class="text-sm text-gray-700">Shared with subtenants</span>
+                                </label>
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" id="sharedUp" class="rounded text-indigo-600">
+                                    <span class="text-sm text-gray-700">Shared with supertenants</span>
+                                </label>
+                            </div>
+                            <button onclick="addResource()" 
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full">Add Resource</button>
+                        </div>
+                    </div>
+
+                    <!-- Roles Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Roles</h2>
+                        <div class="space-y-4">
+                            <input type="text" id="roleName" placeholder="Role name" 
+                                   class="w-full rounded-md border-gray-300 shadow-sm">
+                            <select id="roleTenant" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <button onclick="addRole()" 
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full">Add Role</button>
+                        </div>
+                    </div>
+
+                    <!-- Users Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Users</h2>
+                        <div class="space-y-4">
+                            <input type="text" id="userName" placeholder="User name" 
+                                   class="w-full rounded-md border-gray-300 shadow-sm">
+                            <select id="userTenant" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <select id="userRole" 
+                                    class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <button onclick="addUser()" 
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full">Add User</button>
+                        </div>
+                    </div>
+
+                    <!-- Permissions Section -->
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Permissions</h2>
+                        <div class="space-y-4">
+                            <select id="permRole" class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <select id="permResource" class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <select id="permAction" class="w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="read">Read</option>
+                                <option value="write">Write</option>
+                            </select>
+                            <select id="permTenant" class="w-full rounded-md border-gray-300 shadow-sm"></select>
+                            <button onclick="addPermission()" 
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 w-full">Add Permission</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Save/Load Section -->
+            <div class="bg-white rounded-lg shadow p-6 mt-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Save/Load Configuration</h2>
+                <div class="flex gap-4">
+                    <button onclick="saveState()" 
+                            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                        Save Configuration
+                    </button>
+                    <div class="relative">
+                        <input type="file" id="loadFile" accept=".json" 
+                               class="hidden" onchange="loadState(event)">
+                        <button onclick="document.getElementById('loadFile').click()" 
+                                class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                            Load Configuration
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize localStorage if needed
+        if (!localStorage.getItem('tenants')) localStorage.setItem('tenants', '[]');
+        if (!localStorage.getItem('tenantRelations')) localStorage.setItem('tenantRelations', '[]');
+        if (!localStorage.getItem('resources')) localStorage.setItem('resources', '[]');
+        if (!localStorage.getItem('roles')) localStorage.setItem('roles', '[]');
+        if (!localStorage.getItem('permissions')) localStorage.setItem('permissions', '[]');
+        if (!localStorage.getItem('users')) localStorage.setItem('users', '[]');
+
+        function removeTenant(tenant) {
+            const tenants = JSON.parse(localStorage.getItem('tenants'));
+            const relations = JSON.parse(localStorage.getItem('tenantRelations'));
+            const filteredTenants = tenants.filter(t => t !== tenant);
+            const filteredRelations = relations.filter(r => r.parent !== tenant && r.child !== tenant);
+            localStorage.setItem('tenants', JSON.stringify(filteredTenants));
+            localStorage.setItem('tenantRelations', JSON.stringify(filteredRelations));
+            updateGraph();
+            updateSelects();
+            displayAllData();
+        }
+
+        function removeResource(name) {
+            const resources = JSON.parse(localStorage.getItem('resources'));
+            localStorage.setItem('resources', JSON.stringify(resources.filter(r => r.name !== name)));
+            updateSelects();
+            displayAllData();
+        }
+
+        function removeRole(name) {
+            const roles = JSON.parse(localStorage.getItem('roles'));
+            localStorage.setItem('roles', JSON.stringify(roles.filter(r => r.name !== name)));
+            updateSelects();
+            displayAllData();
+        }
+
+        function removePermission(index) {
+            const permissions = JSON.parse(localStorage.getItem('permissions'));
+            permissions.splice(index, 1);
+            localStorage.setItem('permissions', JSON.stringify(permissions));
+            displayAllData();
+        }
+
+        function displayAllData() {
+            const tenants = JSON.parse(localStorage.getItem('tenants'));
+            const relations = JSON.parse(localStorage.getItem('tenantRelations'));
+            const resources = JSON.parse(localStorage.getItem('resources'));
+            const roles = JSON.parse(localStorage.getItem('roles'));
+            const permissions = JSON.parse(localStorage.getItem('permissions'));
+
+            document.getElementById('currentData').innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Tenants</h3>
+                        <div class="space-y-1">
+                            ${tenants.map(t => `
+                                <div class="flex justify-between items-center">
+                                    <span>${t}</span>
+                                    <button onclick="removeTenant('${t}')" 
+                                            class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <h3 class="font-semibold mt-4 mb-2">Tenant Relations</h3>
+                        <div class="space-y-1">
+                            ${relations.map(r => `
+                                <div class="text-sm text-gray-600">${r.parent} → ${r.child}</div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Resources</h3>
+                        <div class="space-y-2">
+                            ${resources.map(r => `
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium">${r.name}</div>
+                                        <div class="text-sm text-gray-600">Tenant: ${r.tenant}</div>
+                                        <div class="text-xs text-gray-500">
+                                            ${r.sharedDown ? '↓ Shared down' : ''} 
+                                            ${r.sharedUp ? '↑ Shared up' : ''}
+                                        </div>
+                                    </div>
+                                    <button onclick="removeResource('${r.name}')" 
+                                            class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Roles</h3>
+                        <div class="space-y-2">
+                            ${roles.map(r => `
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium">${r.name}</div>
+                                        <div class="text-sm text-gray-600">Tenant: ${r.tenant}</div>
+                                    </div>
+                                    <button onclick="removeRole('${r.name}')" 
+                                            class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Users</h3>
+                        <div class="space-y-2">
+                            ${JSON.parse(localStorage.getItem('users')).map((u, index) => `
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium">${u.name}</div>
+                                        <div class="text-sm text-gray-600">
+                                            ${u.role} in ${u.tenant}
+                                        </div>
+                                    </div>
+                                    <button onclick="removeUser(${index})" 
+                                            class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-semibold mb-2">Permissions</h3>
+                        <div class="space-y-2">
+                            ${permissions.map((p, index) => `
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <div class="font-medium">${p.role} → ${p.resource}</div>
+                                        <div class="text-sm text-gray-600">
+                                            ${p.action.toUpperCase()} in ${p.tenant}
+                                        </div>
+                                    </div>
+                                    <button onclick="removePermission(${index})" 
+                                            class="text-red-600 hover:text-red-800 text-sm">Remove</button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateGraph() {
+            const tenants = JSON.parse(localStorage.getItem('tenants'));
+            const relations = JSON.parse(localStorage.getItem('tenantRelations'));
+
+            const nodes = new vis.DataSet(
+                tenants.map(t => ({ id: t, label: t }))
+            );
+
+            const edges = new vis.DataSet(
+                relations.map(r => ({ from: r.parent, to: r.child, arrows: 'to' }))
+            );
+
+            const container = document.getElementById('mynetwork');
+            const data = { nodes, edges };
+            const options = {
+                layout: {
+                    hierarchical: {
+                        direction: 'UD',
+                        sortMethod: 'directed'
+                    }
+                }
+            };
+            new vis.Network(container, data, options);
+        }
+
+        function updateSelects() {
+            const tenants = JSON.parse(localStorage.getItem('tenants'));
+            const resources = JSON.parse(localStorage.getItem('resources'));
+            const roles = JSON.parse(localStorage.getItem('roles'));
+
+            ['parentTenant', 'childTenant', 'resourceTenant', 'roleTenant', 'permTenant', 'userTenant'].forEach(id => {
+                const select = document.getElementById(id);
+                select.innerHTML = '';
+                tenants.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = opt.text = t;
+                    select.add(opt);
+                });
+            });
+
+            const permResource = document.getElementById('permResource');
+            permResource.innerHTML = '';
+            resources.forEach(r => {
+                const opt = document.createElement('option');
+                opt.value = opt.text = r.name;
+                permResource.add(opt);
+            });
+
+            // Update role selects
+            const roleSelects = ['permRole', 'userRole'];
+            roleSelects.forEach(id => {
+                const select = document.getElementById(id);
+                if (select) {
+                    select.innerHTML = '';
+                    roles.forEach(r => {
+                        const opt = document.createElement('option');
+                        opt.value = opt.text = r.name;
+                        select.add(opt);
+                    });
+                }
+            });
+        }
+
+        function addTenant() {
+            const name = document.getElementById('tenantName').value;
+            if (!name) return;
+            
+            const tenants = JSON.parse(localStorage.getItem('tenants'));
+            if (!tenants.includes(name)) {
+                tenants.push(name);
+                localStorage.setItem('tenants', JSON.stringify(tenants));
+                updateGraph();
+                updateSelects();
+                displayAllData();
+            }
+            document.getElementById('tenantName').value = '';
+        }
+
+        function addTenantRelationship() {
+            const parent = document.getElementById('parentTenant').value;
+            const child = document.getElementById('childTenant').value;
+            if (parent === child) return;
+
+            const relations = JSON.parse(localStorage.getItem('tenantRelations'));
+            if (!relations.some(r => r.parent === parent && r.child === child)) {
+                relations.push({parent, child});
+                localStorage.setItem('tenantRelations', JSON.stringify(relations));
+                updateGraph();
+                displayAllData();
+            }
+        }
+
+        function addResource() {
+            const name = document.getElementById('resourceName').value;
+            if (!name) return;
+            
+            const tenant = document.getElementById('resourceTenant').value;
+            const sharedDown = document.getElementById('sharedDown').checked;
+            const sharedUp = document.getElementById('sharedUp').checked;
+
+            const resources = JSON.parse(localStorage.getItem('resources'));
+            if (!resources.some(r => r.name === name)) {
+                resources.push({name, tenant, sharedDown, sharedUp});
+                localStorage.setItem('resources', JSON.stringify(resources));
+                updateSelects();
+                displayAllData();
+            }
+            document.getElementById('resourceName').value = '';
+        }
+
+        function addRole() {
+            const name = document.getElementById('roleName').value;
+            if (!name) return;
+            
+            const tenant = document.getElementById('roleTenant').value;
+            const roles = JSON.parse(localStorage.getItem('roles'));
+            if (!roles.some(r => r.name === name)) {
+                roles.push({name, tenant});
+                localStorage.setItem('roles', JSON.stringify(roles));
+                updateSelects();
+                displayAllData();
+            }
+            document.getElementById('roleName').value = '';
+            updateSelects();
+        }
+
+        function addPermission() {
+            const role = document.getElementById('permRole').value;
+            const resource = document.getElementById('permResource').value;
+            const action = document.getElementById('permAction').value;
+            const tenant = document.getElementById('permTenant').value;
+
+            const permissions = JSON.parse(localStorage.getItem('permissions'));
+            if (!permissions.some(p => 
+                p.role === role && 
+                p.resource === resource && 
+                p.action === action && 
+                p.tenant === tenant)) {
+                permissions.push({role, resource, action, tenant});
+                localStorage.setItem('permissions', JSON.stringify(permissions));
+                displayAllData();
+            }
+        }
+
+        async function checkFormula() {
+            const query = document.getElementById('smtQuery').value;
+            const data = {
+                tenants: JSON.parse(localStorage.getItem('tenants')),
+                relations: JSON.parse(localStorage.getItem('tenantRelations')),
+                resources: JSON.parse(localStorage.getItem('resources')),
+                roles: JSON.parse(localStorage.getItem('roles')),
+                permissions: JSON.parse(localStorage.getItem('permissions')),
+                query: query
+            };
+
+            const response = await fetch('/check', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await response.text();
+            document.getElementById('smtResult').textContent = result;
+        }
+
+        async function saveState() {
+            const state = {
+                tenants: JSON.parse(localStorage.getItem('tenants')),
+                tenantRelations: JSON.parse(localStorage.getItem('tenantRelations')),
+                resources: JSON.parse(localStorage.getItem('resources')),
+                roles: JSON.parse(localStorage.getItem('roles')),
+                permissions: JSON.parse(localStorage.getItem('permissions')),
+                users: JSON.parse(localStorage.getItem('users'))
+            };
+
+            const response = await fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(state)
+            });
+
+            if (response.ok) {
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'rbac_state.json';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            }
+        }
+
+        function removeUser(index) {
+            const users = JSON.parse(localStorage.getItem('users'));
+            users.splice(index, 1);
+            localStorage.setItem('users', JSON.stringify(users));
+            displayAllData();
+        }
+
+        function addUser() {
+            const name = document.getElementById('userName').value;
+            if (!name) return;
+            
+            const tenant = document.getElementById('userTenant').value;
+            const role = document.getElementById('userRole').value;
+            
+            const users = JSON.parse(localStorage.getItem('users'));
+            if (!users.some(u => u.name === name && u.tenant === tenant)) {
+                users.push({name, tenant, role});
+                localStorage.setItem('users', JSON.stringify(users));
+                displayAllData();
+            }
+            document.getElementById('userName').value = '';
+        }
+
+        async function loadState(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const response = await fetch('/load', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('tenants', JSON.stringify(data.tenants));
+                localStorage.setItem('tenantRelations', JSON.stringify(data.tenantRelations));
+                localStorage.setItem('resources', JSON.stringify(data.resources));
+                localStorage.setItem('roles', JSON.stringify(data.roles));
+                localStorage.setItem('permissions', JSON.stringify(data.permissions));
+                localStorage.setItem('users', JSON.stringify(data.users || []));
+                
+                updateGraph();
+                updateSelects();
+                displayAllData();
+                
+                // Reset file input
+                event.target.value = '';
+            } else {
+                const error = await response.text();
+                alert('Error loading file: ' + error);
+            }
+        }
+
+        // Initial setup
+        updateGraph();
+        updateSelects();
+        displayAllData();
+    </script>
+</body>
+</html>

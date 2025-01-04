@@ -1,0 +1,116 @@
+(set-option :produce-models true)
+; Declare the sorts
+(declare-sort Tenant 0)
+(declare-sort User 0)
+(declare-sort Role 0)
+(declare-sort Permission 0)
+(declare-sort Resource 0)
+; Declare the inheritance direction as an enumerated datatype
+(declare-datatypes ((InheritanceDirection 0)) ((Upwards Downwards)))
+; Core relations and functions
+(declare-fun subtenant (Tenant Tenant) Bool)
+(declare-fun inheritanceDirection (Resource) InheritanceDirection)
+(declare-fun permissionAppliesToResource (Permission Resource) Bool)
+(declare-fun assignUserRole (User Role Tenant) Bool)
+(declare-fun assignRolePermission (Role Permission Tenant) Bool)
+(declare-fun hasRole (User Role Tenant Resource) Bool)
+(declare-fun hasRolePermission (Role Permission Tenant Resource) Bool)
+(declare-fun hasPermission (User Permission Tenant Resource) Bool)
+(declare-fun pathUp (Tenant Tenant) Bool)
+(declare-fun pathDown (Tenant Tenant) Bool)
+; Declare constants for all entities
+(declare-const default Tenant)
+(declare-const client1 Tenant)
+(declare-const client2 Tenant)
+(declare-const res1 Resource)
+(declare-const res2 Resource)
+(declare-const ops1 Role)
+(declare-const op2 Role)
+(declare-const res1_read Permission)
+(declare-const res1_write Permission)
+(declare-const res2_read Permission)
+(declare-const res2_write Permission)
+(assert (distinct default client1 client2))
+; Axioms for pathUp relation
+(assert
+  (forall ((t Tenant))
+    (! (pathUp t t) :pattern ((pathUp t t)))
+  )
+)
+(assert
+  (forall ((t1 Tenant) (t2 Tenant))
+    (! (=> (subtenant t1 t2) (pathUp t1 t2)) :pattern ((pathUp t1 t2)))
+  )
+)
+(assert
+  (forall ((t1 Tenant) (t2 Tenant) (t3 Tenant))
+    (! (=> (and (pathUp t1 t2) (pathUp t2 t3)) (pathUp t1 t3)) :pattern ((pathUp t1 t3)))
+  )
+)
+; Axioms for pathDown relation
+(assert
+  (forall ((t Tenant))
+    (! (pathDown t t) :pattern ((pathDown t t)))
+  )
+)
+(assert
+  (forall ((t1 Tenant) (t2 Tenant))
+    (! (=> (subtenant t1 t2) (pathDown t2 t1)) :pattern ((pathDown t2 t1)))
+  )
+)
+(assert
+  (forall ((t1 Tenant) (t2 Tenant) (t3 Tenant))
+    (! (=> (and (pathDown t1 t2) (pathDown t2 t3)) (pathDown t1 t3)) :pattern ((pathDown t1 t3)))
+  )
+)
+; Define role inheritance rules
+(assert
+  (forall ((u User) (r Role) (t Tenant) (res Resource))
+    (! (= (hasRole u r t res)
+          (exists ((t0 Tenant))
+            (and (assignUserRole u r t0)
+                 (or
+                  (and (= (inheritanceDirection res) Upwards) (pathUp t0 t))
+                  (and (= (inheritanceDirection res) Downwards) (pathDown t0 t))))))
+       :pattern ((hasRole u r t res)))
+  ))
+; Define permission inheritance rules
+(assert
+  (forall ((r Role) (p Permission) (t Tenant) (res Resource))
+    (! (= (hasRolePermission r p t res)
+          (exists ((t0 Tenant))
+            (and (assignRolePermission r p t0)
+                 (or
+                  (and (= (inheritanceDirection res) Upwards) (pathUp t0 t))
+                  (and (= (inheritanceDirection res) Downwards) (pathDown t0 t))))))
+       :pattern ((hasRolePermission r p t res)))
+  ))
+; Define permission granting rules
+(assert
+  (forall ((u User) (p Permission) (t Tenant) (res Resource))
+    (! (= (hasPermission u p t res)
+          (exists ((r Role))
+            (and (hasRole u r t res)
+                 (hasRolePermission r p t res)
+                 (permissionAppliesToResource p res))))
+       :pattern ((hasPermission u p t res)))
+  ))
+(assert (subtenant client1 default))
+(assert (subtenant client2 default))
+(assert (permissionAppliesToResource res1_read res1))
+(assert (permissionAppliesToResource res1_write res1))
+(assert (= (inheritanceDirection res2) Downwards))
+(assert (permissionAppliesToResource res2_read res2))
+(assert (permissionAppliesToResource res2_write res2))
+(declare-const user_ops1 User)
+(assert (assignUserRole user_ops1 ops1 client1))
+(declare-const user_op2 User)
+(assert (assignUserRole user_op2 op2 client2))
+(assert (assignRolePermission ops1 res1_read client1))
+
+(assert (hasPermission user_op2 res1_read client1 res1))
+
+(check-sat)
+(get-model)  
+  
+this goes to an infinite loop, why?
